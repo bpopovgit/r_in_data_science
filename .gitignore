@@ -1,0 +1,45 @@
+# R specific files
+.Rproj.user/
+.Rhistory
+.RData
+.Ruserdata
+*.Rproj
+
+# Output files
+*.html
+*.pdf
+*.docx
+*.doc
+*.xlsx
+*.xls
+*.csv
+*.txt
+
+# Temporary files
+*~
+~$*
+*.swp
+
+# OS specific files
+.DS_Store
+Thumbs.db
+
+# Folders
+/data/
+/output/
+/results/
+/renv/
+/logs/
+/cache/
+
+# R Environment Variables
+.Renviron
+.env
+
+# R Markdown cache
+*_cache/
+*_files/
+
+# Package development files
+/*.tar.gz
+/*.Rcheck/
