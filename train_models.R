@@ -263,6 +263,7 @@ saveRDS(rf_fit, file.path(PATH_PROCESSED, "rf_model.rds"))
 # 3) Evaluate and Compare All Models (XGBoost, Logistic Regression, Random Forest)
 # =============================================================================
 
+cv_results = readRDS(file.path(PATH_PROCESSED, "xgb_cv.rds"))
 
 xgb_model = readRDS(file.path(PATH_PROCESSED, "xgb_model.rds"))
 
@@ -546,5 +547,97 @@ plot_confusion_matrix(log_preds, "Logistic Regression (Test)")
 plot_calibration_curve(rf_preds, "Random Forest (Test)")
 plot_learning_curve(cv_results, "XGBoost")
 plot_feature_importance(xgb_model, model_name = "XGBoost")
+# =============================================================================
+# 5) Generate All Evaluation Plots for All Models
+# =============================================================================
+
+# Test predictions per model
+test_pred_list <- list(
+  "XGBoost" = xgb_preds,
+  "Logistic Regression" = log_preds,
+  "Random Forest" = rf_preds
+)
+
+# Generate ROC and PR curves, confusion matrix, and calibration curve
+for (model_name in names(test_pred_list)) {
+  pred_df <- test_pred_list[[model_name]]
+  
+  print(plot_roc_curve(pred_df, paste(model_name, "(Test)")))
+  print(plot_pr_curve(pred_df, paste(model_name, "(Test)")))
+  print(plot_confusion_matrix(pred_df, paste(model_name, "(Test)")))
+  print(plot_calibration_curve(pred_df, paste(model_name, "(Test)")))
+}
+
+# Learning Curve and Feature Importance for XGBoost
+print(plot_learning_curve(cv_results, "XGBoost"))
+print(plot_feature_importance(xgb_model, model_name = "XGBoost"))
+
+
+# Test predictions per model
+holdout_pred_list <- list(
+  "XGBoost" = xgb_holdout,
+  "Logistic Regression" = log_holdout,
+  "Random Forest" = rf_holdout
+)
+
+# Generate ROC and PR curves, confusion matrix, and calibration curve
+for (model_name in names(holdout_pred_list)) {
+  pred_df <- holdout_pred_list[[model_name]]
+  
+  print(plot_roc_curve(pred_df, paste(model_name, "(Holdout)")))
+  print(plot_pr_curve(pred_df, paste(model_name, "(Holdout)")))
+  print(plot_confusion_matrix(pred_df, paste(model_name, "(Holdout)")))
+  print(plot_calibration_curve(pred_df, paste(model_name, "(Holdout)")))
+}
+
+# Learning Curve and Feature Importance for XGBoost
+print(plot_learning_curve(cv_results, "XGBoost"))
+print(plot_feature_importance(xgb_model, model_name = "XGBoost"))
+
+plot_rf_feature_importance <- function(rf_fit, top_n = 20, model_name = "Random Forest") {
+  library(vip)
+  rf_final <- extract_fit_parsnip(rf_fit)$fit
+  
+  vip::vip(rf_final, num_features = top_n, geom = "col") +
+    ggtitle(paste("Top", top_n, "Feature Importances -", model_name)) +
+    theme_minimal()
+}
+
+
+
+plot_logistic_coefficients <- function(log_reg_fit, top_n = 20, model_name = "Logistic Regression") {
+  library(broom)
+  library(plotly)
+  
+  # Extract coefficients and tidy
+  tidy_coeffs <- tidy(log_reg_fit) %>%
+    filter(term != "(Intercept)") %>%
+    arrange(desc(abs(estimate))) %>%
+    slice(1:top_n)
+  
+  # Plot using plotly
+  plot_ly(
+    tidy_coeffs,
+    x = ~reorder(term, estimate),
+    y = ~estimate,
+    type = "bar",
+    marker = list(color = ~ifelse(estimate > 0, 'tomato', 'steelblue'))
+  ) %>%
+    layout(
+      title = paste("Top", top_n, "Coefficients -", model_name),
+      xaxis = list(title = "Feature"),
+      yaxis = list(title = "Coefficient"),
+      margin = list(b = 120)
+    )
+}
+
+# =============================================================================
+# 6) Final Feature Importance Plots
+# =============================================================================
+
+print(plot_feature_importance(xgb_model, model_name = "XGBoost"))
+print(plot_rf_feature_importance(rf_fit, model_name = "Random Forest"))
+print(plot_logistic_coefficients(log_reg_fit, model_name = "Logistic Regression"))
+
 
 
